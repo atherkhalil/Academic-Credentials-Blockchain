@@ -226,7 +226,6 @@ route.post(
 route.post(
   "/verifyInstituteECDSA",
   [
-    check("signature", "signature object is required!").not().isEmpty(),
     check("publicKey", "publicKey object is required!").not().isEmpty(),
     check("credential", "credential is required!").not().isEmpty(),
   ],
@@ -274,7 +273,6 @@ route.post(
 route.post(
   "/verifyStudentECDSA",
   [
-    check("signature", "signature object is required!").not().isEmpty(),
     check("publicKey", "publicKey object is required!").not().isEmpty(),
     check("credential", "credential is required!").not().isEmpty(),
   ],
@@ -326,7 +324,6 @@ route.post(
 route.post(
   "/verifyMoeECDSA",
   [
-    check("signature", "signature object is required!").not().isEmpty(),
     check("publicKey", "publicKey object is required!").not().isEmpty(),
     check("credential", "credential is required!").not().isEmpty(),
   ],
