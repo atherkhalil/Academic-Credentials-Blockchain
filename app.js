@@ -78,7 +78,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/cred", require("./routes/credentials"));
-app.use("/payment", require("./routes/payment"));
 app.use("/keys", require("./routes/keys"));
 app.use("/search", require("./routes/search"));
 
