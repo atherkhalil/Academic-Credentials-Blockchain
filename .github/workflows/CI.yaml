@@ -58,8 +58,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - name: Hit Webhook
-      uses: distributhor/workflow-webhook@v2
-      env:
-        webhook_url: http://83.110.109.199:9000/hooks/bsv
-        webhook_secret: none
+    - name: SSH & run commands
+      uses: appleboy/ssh-action@master
+      with:
+        host: 83.110.109.199
+        username: server20
+        password: ub20server
+        port: 22001
+        script: |
+          # Stop running Docker Container
+          docker kill $(docker ps -q -f name=cred-bsv)
+          # System cleanup
+          docker system prune -f
+          # Remove old image
+          docker rmi $(docker images atherkhalil/cred-bsv:latest -q)
+          # Run a new container from a new image
+          docker run -d --name cred-bsv -p 4000:4000 atherkhalil/cred-bsv:latest
