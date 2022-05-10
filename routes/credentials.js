@@ -18,7 +18,7 @@ route.post(
     check("title", "title is required!").not().isEmpty(),
     check("description", "description is required!").not().isEmpty(),
     check("issuer", "issuer is required!").not().isEmpty(),
-    check("student", "student is required!").not().isEmpty(),
+    check("learner", "learner is required!").not().isEmpty(),
     check("proof", "proof is required!").not().isEmpty(),
     check("board", "board lines must not be empty!").not().isEmpty(),
     check("equivalency", "equivalency is required!").not().isEmpty(),
@@ -53,7 +53,7 @@ route.post(
         title: aes(req.body.title),
         description: aes(req.body.description),
         issuer: aes(JSON.stringify(req.body.issuer)),
-        student: aes(JSON.stringify(req.body.student)),
+        learner: aes(JSON.stringify(req.body.learner)),
         proof: aes(JSON.stringify(req.body.proof)),
         board: aes(req.body.board),
         equivalency: aes(req.body.equivalency),
@@ -115,7 +115,7 @@ route.get("/get/:id", auth, async (req, res) => {
         title: unAes(data.title),
         description: unAes(data.description),
         issuer: JSON.parse(unAes(data.issuer)),
-        student: JSON.parse(unAes(data.student)),
+        learner: JSON.parse(unAes(data.learner)),
         proof: JSON.parse(unAes(data.proof)),
         board: unAes(data.board),
         equivalency: unAes(data.equivalency),
@@ -153,7 +153,7 @@ route.get("/history/:id", auth, async (req, res) => {
           title: unAes(e.title),
           description: unAes(e.description),
           issuer: JSON.parse(unAes(e.issuer)),
-          student: JSON.parse(unAes(e.student)),
+          learner: JSON.parse(unAes(e.learner)),
           proof: JSON.parse(unAes(e.proof)),
           board: unAes(e.board),
           equivalency: unAes(e.equivalency),
@@ -207,7 +207,14 @@ route.post(
       if (data != "" && data != null) {
         const sig = signWithECDSA(req.body.privateKey, req.body.credential);
 
-        data.instituteECDSA = sig;
+        if (type == "issuer") {
+          data.issuerECDSA = sig;
+        } else if (type == "learner") {
+          data.learnerECDSA = sig;
+        } else if (type == "moe") {
+          data.moeECDSA = sig;
+        }
+
         const { txnId } = await createCredential(obj);
         return res.json({
           success: `Credential signed on the Blockchain!`,
@@ -224,7 +231,7 @@ route.post(
 );
 
 route.post(
-  "/verifyInstituteECDSA",
+  "/verifyIssuerECDSA",
   [
     check("publicKey", "publicKey object is required!").not().isEmpty(),
     check("credential", "credential is required!").not().isEmpty(),
@@ -250,7 +257,7 @@ route.post(
 
     try {
       const sigVerification = verifyECDSA(
-        req.body.credential.instituteECDSA,
+        req.body.credential.issuerECDSA,
         req.body.publicKey,
         req.body.credential.body
       );
@@ -271,7 +278,7 @@ route.post(
 );
 
 route.post(
-  "/verifyStudentECDSA",
+  "/verifyLearnerECDSA",
   [
     check("publicKey", "publicKey object is required!").not().isEmpty(),
     check("credential", "credential is required!").not().isEmpty(),
@@ -287,7 +294,7 @@ route.post(
     if (!errors.isEmpty()) {
       console.log(errors.array());
       logger.logInfo({
-        logType: "Student ECDSA verification error | Missing Params",
+        logType: "Learner ECDSA verification error | Missing Params",
         logTime: new Date().toString(),
         msg: `Missing parameters for ECDSA verification`,
         error: errors.array(),
@@ -297,25 +304,25 @@ route.post(
 
     try {
       const sigVerification = verifyECDSA(
-        req.body.credential.studentECDSA,
+        req.body.credential.learnerECDSA,
         req.body.publicKey,
         {
           body: req.body.credential.body,
-          instituteECDSA: req.body.credential.instituteECDSA,
-          studentECDSA: req.body.credential.studentECDSA,
+          issuerECDSA: req.body.credential.issuerECDSA,
+          learnerECDSA: req.body.credential.learnerECDSA,
         }
       );
 
       if (sigVerification == true)
         return res.status(200).json({
-          success: `Student Signature Verified using ECDSA!`,
+          success: `Learner Signature Verified using ECDSA!`,
         });
 
       return res.status(400).json({
-        Error: "Student Signature Verification Failed using ECDSA!",
+        Error: "Learner Signature Verification Failed using ECDSA!",
       });
     } catch (error) {
-      console.log("Student Signature Verification Error: ", error);
+      console.log("Learner Signature Verification Error: ", error);
       return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
     }
   }
@@ -352,8 +359,8 @@ route.post(
         req.body.publicKey,
         {
           body: req.body.credential.body,
-          instituteECDSA: req.body.credential.instituteECDSA,
-          studentECDSA: req.body.credential.studentECDSA,
+          issuerECDSA: req.body.credential.issuerECDSA,
+          learnerECDSA: req.body.credential.learnerECDSA,
           moeECDSA: req.body.credential.moeECDSA,
         }
       );

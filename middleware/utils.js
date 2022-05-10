@@ -49,6 +49,7 @@ const signWithECDSA = async (_privateKey, _data) => {
 
     // console.log(signed);
     const signature = {
+      signingDate: new Date().toUTCString(),
       r: nimble.functions.encodeHex(signed.r),
       s: nimble.functions.encodeHex(signed.s),
       k: nimble.functions.encodeHex(signed.k),

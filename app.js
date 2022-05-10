@@ -77,7 +77,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/cred", require("./routes/credentials"));
+app.use("/credential", require("./routes/credentials"));
 app.use("/keys", require("./routes/keys"));
 app.use("/search", require("./routes/search"));
 
@@ -101,5 +101,7 @@ app.get("/logs/:limit", (req, res) => {
 
 app.listen(
   process.env.PORT,
-  console.log(`🚀 at http://localhost:${process.env.PORT}`)
+  console.log(
+    `🚀 at http://localhost:${process.env.PORT} \n ${new Date().toUTCString()}`
+  )
 );
