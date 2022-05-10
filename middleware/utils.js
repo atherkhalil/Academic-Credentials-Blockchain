@@ -14,8 +14,7 @@ const createCredential = async (params) => {
     creddy.createCredential(params);
 
     await creddy.sync();
-    // console.log("Origin: ", creddy.origin);
-    // console.log("Location_1: ", creddy.location);
+    // console.log("Location_1: ", creddy.location.slice(0, -3));
 
     const txnId = creddy.location.slice(0, -3);
     // creddy.appendTxIdCredential(txnId);

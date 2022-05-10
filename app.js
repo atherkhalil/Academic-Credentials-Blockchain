@@ -1,6 +1,6 @@
 const express = require("express");
 const Run = require("run-sdk");
-const CONTRACT = require("./CREDDY");
+// const CONTRACT = require("./CREDDY");
 const logger = require("./middleware/logger");
 // Using 'Express' methods
 const app = express();
@@ -27,10 +27,10 @@ let origin = "";
 const initialize = async () => {
   try {
     const run = new Run({
-      network: "mock",
+      network: "test",
       // cache: new Firestore("mock"),
-      // owner: process.env.OWNER,
-      // purse: process.env.PURSE,
+      owner: process.env.OWNER,
+      purse: process.env.PURSE,
       debug: false,
       logger: null,
       trust: "*",
@@ -38,15 +38,18 @@ const initialize = async () => {
       networkTimeout: 100000000,
       timeout: 100000000,
       // api: "whatsonchain",
-      // api: "run",
+      api: "run",
       // api: "mattercloud",
     });
 
-    // const contract = await run.load(
-    //   "a13ab52420c2eb4644307b15e074d0e2ac1d8bb21c441998b6289b9da5240b0a_o2"
-    // );
+    // Origin:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
+    // Location:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
 
-    const contract = new CONTRACT();
+    const contract = await run.load(
+      "1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2"
+    );
+
+    // const contract = new CONTRACT();
 
     console.log("Purse PrivKey: ", run.purse.privkey);
     console.log("Purse Address: ", run.purse.address);
@@ -77,7 +80,8 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/credential", require("./routes/credentials"));
+app.use("/credentialS", require("./routes/credentials"));
+app.use("/accreditationS", require("./routes/accreditations"));
 app.use("/keys", require("./routes/keys"));
 app.use("/search", require("./routes/search"));
 

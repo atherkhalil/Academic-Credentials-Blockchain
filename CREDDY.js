@@ -17,7 +17,7 @@ class CREDDY extends Jig {
 
   getCredential(id) {
     try {
-      let data = this.Credentials.filter((e) => e.credId == id);
+      let data = this.Credentials.filter((e) => e.body.id == id);
       data.reverse();
       return data[0];
     } catch (error) {
@@ -27,7 +27,7 @@ class CREDDY extends Jig {
 
   getCredentialHistory(id) {
     try {
-      return this.Credentials.filter((e) => e.credId == id);
+      return this.Credentials.filter((e) => e.body.id == id);
     } catch (error) {
       return false;
     }
@@ -37,6 +37,37 @@ class CREDDY extends Jig {
     try {
       this.Credentials[this.Credentials.length - 1].txnId = txnId;
       return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Accreditation Methods
+  accreditIssuer(info) {
+    try {
+      this.Accreditations.push(info);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  verifyAccreditation(_issuer) {
+    try {
+      let issuer = this.Accreditations.filter(
+        (e) => e.issuerId == _issuer.issuerId
+      );
+      if (issuer[0].publicKey == _issuer.publicKey) {
+        console.log(
+          "Smart Contract Log: Accreditation verified for " + _issuer.issuerId
+        );
+        console.log(issuer);
+        return issuer[0].publicKey;
+      }
+      console.log(
+        "Smart Contract Log: Accreditation NOT verified for " + _issuer.issuerId
+      );
+      return false;
     } catch (error) {
       return false;
     }
