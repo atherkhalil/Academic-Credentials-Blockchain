@@ -73,4 +73,4 @@ jobs:
           # Remove old image
           docker rmi $(docker images atherkhalil/cred-bsv:latest -q)
           # Run a new container from a new image
-          docker run -d --name cred-bsv -p 4000:4000 atherkhalil/cred-bsv:latest
+          docker run -d --name cred-bsv --mount source=runcache,target=/app/.runcache -p 4000:4000 atherkhalil/cred-bsv:latest
