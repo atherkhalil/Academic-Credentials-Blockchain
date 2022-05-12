@@ -30,12 +30,19 @@ const createCredential = async (params) => {
   }
 };
 
-const signWithECDSA = async (_privateKey, _data) => {
+const signWithECDSA = async (_privateKey, _data, _matchPubKey) => {
   try {
+    // Convert to PrivateKey object
     const privateKey = nimble.PrivateKey.fromString(_privateKey);
 
     console.log("PrivKey: ", privateKey.toString());
     console.log("PubKey: ", privateKey.toPublicKey().toString());
+
+    // Match the pubKey in the credential with the signing pubKey
+    if (_matchPubKey != privateKey.toPublicKey().toString()) {
+      console.log("Invalid signing key!");
+      throw "Invalid signing key!";
+    }
 
     // Sign with ECDSA
     let data = nimble.functions.sha256(JSON.stringify(_data));
@@ -46,14 +53,13 @@ const signWithECDSA = async (_privateKey, _data) => {
       privateKey.toPublicKey().point
     );
 
-    // console.log(signed);
     const signature = {
       signingDate: new Date().toUTCString(),
       r: nimble.functions.encodeHex(signed.r),
       s: nimble.functions.encodeHex(signed.s),
       k: nimble.functions.encodeHex(signed.k),
     };
-    console.log(signature);
+    // console.log(signature);
     return signature;
   } catch (error) {
     console.log("Sign With ECDSA Error: ", error);
@@ -73,7 +79,7 @@ const verifyECDSA = async (_signature, _publicKey, _data) => {
       nimble.functions.decodePublicKey(nimble.functions.decodeHex(_publicKey))
     );
 
-    console.log(verifySignature);
+    // console.log(verifySignature);
 
     return verifySignature;
   } catch (error) {

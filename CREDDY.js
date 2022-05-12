@@ -54,9 +54,7 @@ class CREDDY extends Jig {
 
   verifyAccreditation(_issuer) {
     try {
-      let issuer = this.Accreditations.filter(
-        (e) => e.issuerId == _issuer.issuerId
-      );
+      let issuer = this.Accreditations.filter((e) => e.issuerId == _issuer.id);
       if (issuer[0].publicKey == _issuer.publicKey) {
         console.log(
           "Smart Contract Log: Accreditation verified for " + _issuer.issuerId

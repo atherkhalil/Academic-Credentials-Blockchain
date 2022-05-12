@@ -46,7 +46,7 @@ const initialize = async () => {
     // Location:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
 
     const contract = await run.load(
-      "1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2"
+      "cf51b11c3fb7e52fe4ff0da2c151c642f41a1f4f05e871701ca07d0a27ea9642_o2"
     );
 
     // const contract = new CONTRACT();
