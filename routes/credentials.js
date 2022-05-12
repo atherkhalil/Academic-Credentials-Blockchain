@@ -32,7 +32,10 @@ route.post(
     check("issuer", "issuer is required!").not().isEmpty(),
     check("learner", "learner is required!").not().isEmpty(),
     check("moe", "moe is required!").not().isEmpty(),
-    check("priv_key", "Issuer Private Key is required!").not().isEmpty(),
+    check("priv_key", "Private key length must be 52!").isLength({
+      min: 52,
+      max: 52,
+    }),
   ],
   auth,
   async (req, res) => {
@@ -67,10 +70,13 @@ route.post(
 
       if (req.body.issuer.type == "ACCREDITED") {
         const verification = await creddy.verifyAccreditation(req.body.issuer);
-        if (verification == false)
+        // console.log(verification);
+        if (verification === false) {
+          console.log(`Issuer ${req.body.issuer.name} Not Accredited`);
           return res.status(400).json({
-            Error: "Institute Not Accredited!",
+            Error: `Issuer ${req.body.issuer.name} Not Accredited`,
           });
+        }
       }
 
       let obj = {
@@ -105,7 +111,7 @@ route.post(
 
       const { txnId } = await createCredential(obj);
       console.log(
-        `Credential ${obj.body.id} created by ${req.body.issuer.issuerName} | TxnID: ${txnId}`
+        `Credential ${obj.body.id} created by ${req.body.issuer.name} | TxnID: ${txnId}`
       );
 
       logger.logInfo({
@@ -251,7 +257,10 @@ route.post(
   [
     check("type", "type is required!").not().isEmpty(),
     check("credentialId", "credentialId is required!").not().isEmpty(),
-    check("privateKey", "issuanceDate is required!").not().isEmpty(),
+    check("privateKey", "Private key length must be 52!").isLength({
+      min: 52,
+      max: 52,
+    }),
   ],
   auth,
   async (req, res) => {

@@ -13,7 +13,10 @@ route.get(
   "/verify",
   [
     check("issuerId", "issuerId is required!").not().isEmpty(),
-    check("publicKey", "publicKey is required!").not().isEmpty(),
+    check("publicKey", "Public key length must be 66!").isLength({
+      min: 66,
+      max: 66,
+    }),
   ],
   auth,
   async (req, res) => {
@@ -72,7 +75,10 @@ route.post(
   [
     check("issuerId", "issuerId is required!").not().isEmpty(),
     check("issuerName", "issuerName is required!").not().isEmpty(),
-    check("publicKey", "publicKey is required!").not().isEmpty(),
+    check("publicKey", "Public key length must be 66!").isLength({
+      min: 66,
+      max: 66,
+    }),
   ],
   auth,
   async (req, res) => {
