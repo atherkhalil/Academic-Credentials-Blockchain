@@ -153,7 +153,7 @@ route.get("/get/:id", auth, async (req, res) => {
     const data = creddy.getCredential(req.params.id);
     // console.log(data);
     if (data != "" && data != null) {
-      // console.log(data);
+      console.log("GET revocation: ", data.revocation);
       let response = {
         body: {
           id: data.body.id,
@@ -174,18 +174,22 @@ route.get("/get/:id", auth, async (req, res) => {
           issuer: JSON.parse(unAes(data.body.issuer)),
           learner: JSON.parse(unAes(data.body.learner)),
           moe: JSON.parse(unAes(data.body.moe)),
-          equivalency: data.body.equivalency
-            ? unAes(data.body.equivalency)
-            : {},
-          revocation: data.body.revocation
-            ? JSON.parse(unAes(data.body.revocation))
-            : {},
+
           credentialHash: data.body.credentialHash,
           timeStamp: data.body.timeStamp,
         },
         issuerECDSA: data.issuerECDSA ? data.issuerECDSA : {},
         learnerECDSA: data.learnerECDSA ? data.learnerECDSA : {},
         moeECDSA: data.moeECDSA ? data.moeECDSA : {},
+        equivalency: data.equivalency
+          ? JSON.parse(unAes(data.equivalency))
+          : {},
+        equivalencyECDSA: data.equivalencyECDSA ? data.equivalencyECDSA : {},
+        revocation: data.revocation ? data.revocation : false,
+        revocationECDSA: data.revocationECDSA ? data.revocationECDSA : {},
+        revertRevocationECDSA: data.revertRevocationECDSA
+          ? data.revertRevocationECDSA
+          : {},
         txnId: data.txnId,
       };
       return res.status(200).send(response);
@@ -228,10 +232,6 @@ route.get("/history/:id", auth, async (req, res) => {
             issuer: JSON.parse(unAes(e.body.issuer)),
             learner: JSON.parse(unAes(e.body.learner)),
             moe: JSON.parse(unAes(e.body.moe)),
-            equivalency: e.body.equivalency ? unAes(e.body.equivalency) : {},
-            revocation: e.body.revocation
-              ? JSON.parse(unAes(e.body.revocation))
-              : {},
             credentialHash: e.body.credentialHash,
 
             timeStamp: e.body.timeStamp,
@@ -239,6 +239,14 @@ route.get("/history/:id", auth, async (req, res) => {
           issuerECDSA: e.issuerECDSA ? e.issuerECDSA : {},
           learnerECDSA: e.learnerECDSA ? e.learnerECDSA : {},
           moeECDSA: e.moeECDSA ? e.moeECDSA : {},
+          equivalency: e.equivalency ? JSON.parse(unAes(e.equivalency)) : {},
+          equivalencyECDSA: e.equivalencyECDSA ? e.equivalencyECDSA : {},
+          revocation: e.revocation ? e.revocation : false,
+          revocationECDSA: e.revocationECDSA ? e.revocationECDSA : {},
+          revertRevocationECDSA: e.revertRevocationECDSA
+            ? e.revertRevocationECDSA
+            : {},
+
           txnId: e.txnId,
         };
         response.push(obj);
@@ -304,6 +312,10 @@ route.post(
             return res.status(400).json({ Error: sig });
           obj.issuerECDSA = sig;
         } else if (req.body.type == "learner") {
+          if (!data.issuerECDSA)
+            return res
+              .status(400)
+              .json({ Error: "Issuer digital signature pending" });
           const learner = JSON.parse(unAes(data.body.learner));
           obj.issuerECDSA = data.issuerECDSA;
           const sig = await signWithECDSA(
@@ -318,6 +330,10 @@ route.post(
             return res.status(400).json({ Error: sig });
           obj.learnerECDSA = sig;
         } else if (req.body.type == "moe") {
+          if (!data.learnerECDSA)
+            return res
+              .status(400)
+              .json({ Error: "Issuer digital signature pending" });
           const moe = JSON.parse(unAes(data.body.moe));
 
           obj.issuerECDSA = data.issuerECDSA;
@@ -381,6 +397,10 @@ route.post(
       const data = await creddy.getCredential(req.body.credentialId);
       const issuer = JSON.parse(unAes(data.body.issuer));
       if (issuer.type == "ACCREDITED") {
+        if (!data.issuerECDSA)
+          return res
+            .status(400)
+            .json({ Error: "Issuer digital signature pending" });
         const verification = await creddy.verifyAccreditation(issuer);
         if (verification == false)
           return res.status(400).json({
@@ -452,6 +472,10 @@ route.post(
 
     try {
       const data = await creddy.getCredential(req.body.credentialId);
+      if (!data.learnerECDSA)
+        return res
+          .status(400)
+          .json({ Error: "Learner digital signature pending" });
       const learner = JSON.parse(unAes(data.body.learner));
 
       const sigVerification = await verifyECDSA(
@@ -505,6 +529,8 @@ route.post(
 
     try {
       const data = await creddy.getCredential(req.body.credentialId);
+      if (!data.moeECDSA)
+        return res.status(400).json({ Error: "MoE digital signature pending" });
       const moe = JSON.parse(unAes(data.body.moe));
 
       const sigVerification = await verifyECDSA(data.moeECDSA, moe.publicKey, {
@@ -523,6 +549,434 @@ route.post(
       });
     } catch (error) {
       console.log("MoE Signature Verification Error: ", error);
+      return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
+    }
+  }
+);
+
+route.post(
+  "/performEquivalency",
+  [
+    check("credentialId", "credentialId is required!").not().isEmpty(),
+    check("equivalatedBy", "equivalatedBy is required!").not().isEmpty(),
+    check("equivalatedFor", "equivalatedFor is required!").not().isEmpty(),
+    check("equivalentFrom", "equivalentFrom is required!").not().isEmpty(),
+    check("equivalentTo", "equivalentTo is required!").not().isEmpty(),
+    check("privateKey", "Private key length must be 52!").isLength({
+      min: 52,
+      max: 52,
+    }),
+  ],
+  auth,
+  async (req, res) => {
+    console.log(
+      `Performing equivalency of credential: `,
+      req.body.credentialId
+    );
+    logger.logInfo({
+      logType:
+        `Performing credential equivalency for credential: ` +
+        req.body.credentialId,
+      logTime: new Date().toString(),
+    });
+    const errors = validationResult(req);
+    // console.log(req.body);
+    if (!errors.isEmpty()) {
+      console.log(errors.array());
+      logger.logInfo({
+        logType: "Credential equivalency | Missing Params",
+        logTime: new Date().toString(),
+        msg: `Missing parameters for Credential equivalency`,
+        error: errors.array(),
+      });
+      return res.status(400).json({
+        error: "Missing Parameter(s)!",
+        missingParams: errors.array(),
+      });
+    }
+
+    try {
+      creddy = await creddy;
+      const data = await creddy.getCredential(req.body.credentialId);
+
+      if (data != "" && data != null) {
+        let obj = { body: data.body };
+
+        const moe = JSON.parse(unAes(data.body.moe));
+
+        obj.issuerECDSA = data.issuerECDSA;
+        obj.learnerECDSA = data.learnerECDSA;
+        obj.moeECDSA = data.moeECDSA;
+        obj.equivalency = aes(
+          JSON.stringify({
+            equivalatedBy: req.body.equivalatedBy,
+            equivalatedFor: req.body.equivalatedFor,
+            equivalentFrom: req.body.equivalentFrom,
+            equivalentTo: req.body.equivalentTo,
+          })
+        );
+
+        const sig = await signWithECDSA(
+          req.body.privateKey,
+          {
+            body: data.body,
+            issuerECDSA: data.issuerECDSA,
+            learnerECDSA: data.learnerECDSA,
+            moeECDSA: data.moeECDSA,
+            equivalency: obj.equivalency,
+          },
+          moe.publicKey
+        );
+        console.log("Equivalency Sig: ", sig);
+        if (sig == "Invalid signing key!")
+          return res.status(400).json({ Error: sig });
+
+        obj.equivalencyECDSA = sig;
+
+        const { txnId } = await createCredential(obj);
+        return res.json({
+          success: `Credential equivalated & signed on the Blockchain!`,
+          txnId: txnId,
+          obj,
+        });
+      }
+
+      return res.status(404).json({ Error: "Credential Not Found!" });
+    } catch (error) {
+      console.log("Credential Equivalency Error: ", error);
+      return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
+    }
+  }
+);
+
+route.post(
+  "/verifyEquivalency",
+  [check("credentialId", "credentialId is required!").not().isEmpty()],
+  auth,
+  async (req, res) => {
+    logger.logInfo({
+      logType: `Verify Equivalency`,
+      logTime: new Date().toString(),
+    });
+    const errors = validationResult(req);
+    // console.log(req.body);
+    if (!errors.isEmpty()) {
+      console.log(errors.array());
+      logger.logInfo({
+        logType: "Equivalency verification error | Missing Params",
+        logTime: new Date().toString(),
+        msg: `Missing parameters for Equivalency verification`,
+        error: errors.array(),
+      });
+      return res.status(400).json({
+        error: "Missing Parameter(s)!",
+        missingParams: errors.array(),
+      });
+    }
+
+    try {
+      const data = await creddy.getCredential(req.body.credentialId);
+      if (!data.equivalencyECDSA)
+        return res
+          .status(400)
+          .json({ Error: "Equivalency not performed yet!" });
+      const moe = JSON.parse(unAes(data.body.moe));
+
+      const sigVerification = await verifyECDSA(
+        data.equivalencyECDSA,
+        moe.publicKey,
+        {
+          body: data.body,
+          issuerECDSA: data.issuerECDSA,
+          learnerECDSA: data.learnerECDSA,
+          moeECDSA: data.moeECDSA,
+          equivalency: data.equivalency,
+        }
+      );
+
+      if (sigVerification == true)
+        return res.status(200).json({
+          success: `Equivalency Verified using ECDSA!`,
+        });
+
+      return res.status(400).json({
+        Error: "Equivalency Verification Failed using ECDSA!",
+      });
+    } catch (error) {
+      console.log("Equivalency Verification Error: ", error);
+      return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
+    }
+  }
+);
+
+route.post(
+  "/revoke",
+  [
+    check("credentialId", "credentialId is required!").not().isEmpty(),
+    check("privateKey", "Private key length must be 52!").isLength({
+      min: 52,
+      max: 52,
+    }),
+  ],
+  auth,
+  async (req, res) => {
+    console.log(`Revoke credential: `, req.body.credentialId);
+    logger.logInfo({
+      logType: `Revoke credential: ` + req.body.credentialId,
+      logTime: new Date().toString(),
+    });
+    const errors = validationResult(req);
+    // console.log(req.body);
+    if (!errors.isEmpty()) {
+      console.log(errors.array());
+      logger.logInfo({
+        logType: "Credential revocation | Missing Params",
+        logTime: new Date().toString(),
+        msg: `Missing parameters for Credential revocation`,
+        error: errors.array(),
+      });
+      return res.status(400).json({
+        error: "Missing Parameter(s)!",
+        missingParams: errors.array(),
+      });
+    }
+
+    try {
+      creddy = await creddy;
+      const data = await creddy.getCredential(req.body.credentialId);
+
+      if (data != "" && data != null) {
+        let obj = { body: data.body };
+
+        const issuer = JSON.parse(unAes(data.body.issuer));
+
+        obj.issuerECDSA = data.issuerECDSA ? data.issuerECDSA : {};
+        obj.learnerECDSA = data.learnerECDSA ? data.learnerECDSA : {};
+        obj.moeECDSA = data.moeECDSA ? data.moeECDSA : {};
+        obj.equivalency = data.equivalency ? data.equivalency : {};
+        obj.equivalencyECDSA = data.equivalencyECDSA
+          ? data.equivalencyECDSA
+          : {};
+
+        const sig = await signWithECDSA(
+          req.body.privateKey,
+          {
+            body: data.body,
+          },
+          issuer.publicKey
+        );
+        console.log("Revocation Sig: ", sig);
+        if (sig == "Invalid signing key!")
+          return res.status(400).json({ Error: sig });
+
+        obj.revocation = true;
+        obj.revocationECDSA = sig;
+
+        const { txnId } = await createCredential(obj);
+        return res.json({
+          success: `Credential revoked & signed on the Blockchain!`,
+          txnId: txnId,
+          obj,
+        });
+      }
+
+      return res.status(404).json({ Error: "Credential Not Found!" });
+    } catch (error) {
+      console.log("Credential Revocation Error: ", error);
+      return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
+    }
+  }
+);
+
+route.post(
+  "/revertRevocation",
+  [
+    check("credentialId", "credentialId is required!").not().isEmpty(),
+    check("privateKey", "Private key length must be 52!").isLength({
+      min: 52,
+      max: 52,
+    }),
+  ],
+  auth,
+  async (req, res) => {
+    console.log(`Revert revocation of credential: `, req.body.credentialId);
+    logger.logInfo({
+      logType: `Revert revocation of credential: ` + req.body.credentialId,
+      logTime: new Date().toString(),
+    });
+    const errors = validationResult(req);
+    // console.log(req.body);
+    if (!errors.isEmpty()) {
+      console.log(errors.array());
+      logger.logInfo({
+        logType: "CRevert revocation of credential | Missing Params",
+        logTime: new Date().toString(),
+        msg: `Missing parameters for reverting revocation of credential`,
+        error: errors.array(),
+      });
+      return res.status(400).json({
+        error: "Missing Parameter(s)!",
+        missingParams: errors.array(),
+      });
+    }
+
+    try {
+      creddy = await creddy;
+      const data = await creddy.getCredential(req.body.credentialId);
+
+      if (data != "" && data != null) {
+        if (!data.revocationECDSA)
+          return res.status(400).json({ Error: "Credential is not revoked!" });
+        let obj = { body: data.body };
+
+        const issuer = JSON.parse(unAes(data.body.issuer));
+
+        obj.issuerECDSA = data.issuerECDSA ? data.issuerECDSA : {};
+        obj.learnerECDSA = data.learnerECDSA ? data.learnerECDSA : {};
+        obj.moeECDSA = data.moeECDSA ? data.moeECDSA : {};
+        obj.equivalency = data.equivalency ? data.equivalency : {};
+        obj.equivalencyECDSA = data.equivalencyECDSA
+          ? data.equivalencyECDSA
+          : {};
+        obj.revocationECDSA = data.revocationECDSA;
+
+        const sig = await signWithECDSA(
+          req.body.privateKey,
+          {
+            body: data.body,
+            revocation: data.revocationECDSA,
+          },
+          issuer.publicKey
+        );
+        console.log("Revert revocation Sig: ", sig);
+        if (sig == "Invalid signing key!")
+          return res.status(400).json({ Error: sig });
+
+        obj.revocation = false;
+        obj.revertRevocationECDSA = sig;
+
+        const { txnId } = await createCredential(obj);
+        return res.json({
+          success: `Credential recocation reverted & signed on the Blockchain!`,
+          txnId: txnId,
+          obj,
+        });
+      }
+
+      return res.status(404).json({ Error: "Credential Not Found!" });
+    } catch (error) {
+      console.log("Revert Credential Revocation Error: ", error);
+      return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
+    }
+  }
+);
+
+route.post(
+  "/verifyRevocation",
+  [check("credentialId", "credentialId is required!").not().isEmpty()],
+  auth,
+  async (req, res) => {
+    logger.logInfo({
+      logType: `Verify Revocation`,
+      logTime: new Date().toString(),
+    });
+    const errors = validationResult(req);
+    // console.log(req.body);
+    if (!errors.isEmpty()) {
+      console.log(errors.array());
+      logger.logInfo({
+        logType: "Revocation verification error | Missing Params",
+        logTime: new Date().toString(),
+        msg: `Missing parameters for Revocation verification`,
+        error: errors.array(),
+      });
+      return res.status(400).json({
+        error: "Missing Parameter(s)!",
+        missingParams: errors.array(),
+      });
+    }
+
+    try {
+      const data = await creddy.getCredential(req.body.credentialId);
+      const issuer = JSON.parse(unAes(data.body.issuer));
+
+      const sigVerification = await verifyECDSA(
+        data.revocationECDSA,
+        issuer.publicKey,
+        {
+          body: data.body,
+        }
+      );
+
+      if (sigVerification == true)
+        return res.status(200).json({
+          success: `Revocation Verified using ECDSA!`,
+        });
+
+      return res.status(400).json({
+        Error: "Revocation Verification Failed using ECDSA!",
+      });
+    } catch (error) {
+      console.log("Revocation Verification Error: ", error);
+      return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
+    }
+  }
+);
+
+route.post(
+  "/verifyRevert",
+  [check("credentialId", "credentialId is required!").not().isEmpty()],
+  auth,
+  async (req, res) => {
+    logger.logInfo({
+      logType: `Verify Revocation`,
+      logTime: new Date().toString(),
+    });
+    const errors = validationResult(req);
+    // console.log(req.body);
+    if (!errors.isEmpty()) {
+      console.log(errors.array());
+      logger.logInfo({
+        logType: "Revert revocation verification error | Missing Params",
+        logTime: new Date().toString(),
+        msg: `Missing parameters for revert revocation verification`,
+        error: errors.array(),
+      });
+      return res.status(400).json({
+        error: "Missing Parameter(s)!",
+        missingParams: errors.array(),
+      });
+    }
+
+    try {
+      const data = await creddy.getCredential(req.body.credentialId);
+      if (!data.revocationECDSA)
+        return res.status(400).json({ Error: "Credential is not revoked!" });
+      if (!data.revertRevocationECDSA)
+        return res
+          .status(400)
+          .json({ Error: "Credential revocation not reverted yet!" });
+      const issuer = JSON.parse(unAes(data.body.issuer));
+
+      const sigVerification = await verifyECDSA(
+        data.revertRevocationECDSA,
+        issuer.publicKey,
+        {
+          body: data.body,
+          revocation: data.revocationECDSA,
+        }
+      );
+
+      if (sigVerification == true)
+        return res.status(200).json({
+          success: `Revert Revocation Verified using ECDSA!`,
+        });
+      console.log("Revert sig: ", sigVerification);
+      return res.status(400).json({
+        Error: "Revert Revocation Verification Failed using ECDSA!",
+      });
+    } catch (error) {
+      console.log("Revert Revocation Verification Error: ", error);
       return res.status(500).json({ Error: "INTERNAL SERVER ERROR" });
     }
   }

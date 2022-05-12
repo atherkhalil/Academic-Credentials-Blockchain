@@ -1,6 +1,6 @@
 const express = require("express");
 const Run = require("run-sdk");
-// const CONTRACT = require("./CREDDY");
+const CONTRACT = require("./CREDDY");
 const logger = require("./middleware/logger");
 // Using 'Express' methods
 const app = express();
@@ -46,7 +46,7 @@ const initialize = async () => {
     // Location:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
 
     const contract = await run.load(
-      "b86a756e913d0f229c838e9b7b5e4fcb903819a7bb5b44e0d14e608cdd834037_o2"
+      "b4c45625825ea7975b0dc414af6caafce353dd17cb049721ccee4aa689afa489_o2"
     );
 
     // const contract = new CONTRACT();
