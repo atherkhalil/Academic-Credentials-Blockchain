@@ -27,7 +27,7 @@ let origin = "";
 const initialize = async () => {
   try {
     const run = new Run({
-      network: "test",
+      network: "mock",
       // cache: new Firestore("mock"),
       owner: process.env.OWNER,
       purse: process.env.PURSE,
@@ -38,18 +38,18 @@ const initialize = async () => {
       networkTimeout: 100000000,
       timeout: 100000000,
       // api: "whatsonchain",
-      api: "run",
+      // api: "run",
       // api: "mattercloud",
     });
 
     // Origin:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
     // Location:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
 
-    const contract = await run.load(
-      "b4c45625825ea7975b0dc414af6caafce353dd17cb049721ccee4aa689afa489_o2"
-    );
+    // const contract = await run.load(
+    //   "b4c45625825ea7975b0dc414af6caafce353dd17cb049721ccee4aa689afa489_o2"
+    // );
 
-    // const contract = new CONTRACT();
+    const contract = new CONTRACT();
 
     console.log("Purse PrivKey: ", run.purse.privkey);
     console.log("Purse Address: ", run.purse.address);

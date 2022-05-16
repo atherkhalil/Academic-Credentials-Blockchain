@@ -39,7 +39,7 @@ route.post(
   ],
   auth,
   async (req, res) => {
-    console.log(`Credential Request: ${req.body.id}`);
+    console.log(`Credential Request: ${req.body}`);
     logger.logInfo({
       logType: `Credential Creation Request: ${req.body.id}`,
       logTime: new Date().toString(),
