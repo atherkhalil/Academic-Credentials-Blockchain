@@ -61,7 +61,7 @@ jobs:
     - name: SSH & run commands
       uses: appleboy/ssh-action@master
       with:
-        host: 83.110.109.199
+        host: 83.110.108.35
         username: server20
         password: ub20server
         port: 22001
