@@ -5,7 +5,7 @@ name: Production-CI
 
 on:
   push:
-    branches: [ production ]
+    branches: [ main ]
 env:
   # Use docker.io for Docker Hub if empty
   # github.repository as <account>/<repo>
