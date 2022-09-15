@@ -119,13 +119,13 @@ route.post(
         logType: "Credential Created",
         logTime: new Date().toString(),
         msg: `Credential ${req.body.id} Created`,
-        txnID: txnId,
+        txnID: txnId ? txnId : "Not able to post on the Blockchain",
         requestBody: req.body,
       });
 
       return res.json({
         success: `Credential '${req.body.id}' posted to the Blockchain!`,
-        txnId: txnId,
+        txnId: txnId ? txnId : "Not able to post on the Blockchain",
       });
     } catch (error) {
       console.log(`Credential ${req.body.id} Creation Error: `, error);

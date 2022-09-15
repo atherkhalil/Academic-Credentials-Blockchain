@@ -34,9 +34,9 @@ const initialize = async () => {
       debug: false,
       logger: null,
       trust: "*",
-      networkRetries: 10,
-      networkTimeout: 100000000,
-      timeout: 100000000,
+      networkRetries: 2,
+      networkTimeout: 10000,
+      timeout: 10000,
       // api: "whatsonchain",
       api: "run",
       // api: "mattercloud",
@@ -45,11 +45,11 @@ const initialize = async () => {
     // Origin:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
     // Location:  1e45e11736e5ee47747468cd6ab5d3663b17078a5e3013b97cede2824a482cfd_o2
 
-    const contract = await run.load(
-      "232a8c233787eb79ea4ffb3f27b5961650bf3cb5810f55047bc1fdaabe2cc8cc_o2"
-    );
+    // const contract = await run.load(
+    //   "232a8c233787eb79ea4ffb3f27b5961650bf3cb5810f55047bc1fdaabe2cc8cc_o2"
+    // );
 
-    // const contract = new CONTRACT();
+    const contract = new CONTRACT();
 
     console.log("Purse PrivKey: ", run.purse.privkey);
     console.log("Purse Address: ", run.purse.address);
@@ -106,6 +106,6 @@ app.get("/logs/:limit", (req, res) => {
 app.listen(
   process.env.PORT,
   console.log(
-    `🚀 at http://localhost:${process.env.PORT} \n ${new Date().toUTCString()}`
+    `🚀 at http://localhost:${process.env.PORT} \n${new Date().toUTCString()}`
   )
 );
