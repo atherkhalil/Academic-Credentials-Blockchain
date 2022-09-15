@@ -27,10 +27,10 @@ let origin = "";
 const initialize = async () => {
   try {
     const run = new Run({
-      network: "test",
+      network: "mock",
       // cache: new Firestore("mock"),
-      owner: process.env.OWNER,
-      purse: process.env.PURSE,
+      // owner: process.env.OWNER,
+      // purse: process.env.PURSE,
       debug: false,
       logger: null,
       trust: "*",
@@ -38,7 +38,7 @@ const initialize = async () => {
       networkTimeout: 10000,
       timeout: 10000,
       // api: "whatsonchain",
-      api: "run",
+      // api: "run",
       // api: "mattercloud",
     });
 
