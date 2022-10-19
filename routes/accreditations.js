@@ -12,7 +12,7 @@ const mutex = new Mutex();
 route.get(
   "/verify",
   [
-    check("issuerId", "issuerId is required!").not().isEmpty(),
+    check("id", "id is required!").not().isEmpty(),
     check("publicKey", "Public key length must be 66!").isLength({
       min: 66,
       max: 66,
@@ -36,11 +36,11 @@ route.get(
     }
 
     logger.logInfo({
-      logType: `Verify Issuer ${req.body.issuerId} Accreditation`,
+      logType: `Verify Issuer ${req.body.id} Accreditation`,
       logTime: new Date().toString(),
     });
 
-    console.log("Issuer ID: ", req.body.issuerId);
+    console.log("Issuer ID: ", req.body.id);
     console.log("Public Key: ", req.body.publicKey);
 
     try {
@@ -51,7 +51,7 @@ route.get(
         logger.logInfo({
           logType: "Issuer Successfully Verified",
           logTime: new Date().toString(),
-          msg: `Issuer ${req.body.issuerId} Accreditation Successfully Verified`,
+          msg: `Issuer ${req.body.id} Accreditation Successfully Verified`,
         });
 
         return res.status(200).send(verification);
@@ -73,7 +73,7 @@ route.get(
 route.post(
   "/new",
   [
-    check("issuerId", "issuerId is required!").not().isEmpty(),
+    check("id", "id is required!").not().isEmpty(),
     check("issuerName", "issuerName is required!").not().isEmpty(),
     check("publicKey", "Public key length must be 66!").isLength({
       min: 66,
@@ -102,7 +102,7 @@ route.post(
       logTime: new Date().toString(),
     });
 
-    console.log("Issuer ID: ", req.body.issuerId);
+    console.log("Issuer ID: ", req.body.id);
     console.log("Issuer Name: ", req.body.issuerName);
     console.log("Public Key: ", req.body.publicKey);
 
